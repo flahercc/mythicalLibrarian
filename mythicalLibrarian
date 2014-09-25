@@ -519,9 +519,9 @@
        		for XBMCIP in ${XBMCIPs[@]}
        		do
 			echo "SENDING REQUESTED COMMANDS TO:$XBMCIP"
-  			test "$XBMCNotify" = "Enabled" && curl -L -s -m3 --connect-timeout 5 "http://"$XBMCIP"/xbmcCmds/xbmcHttp?command=ExecBuiltIn(Notification(mythical%20Librarian%2Cadding%20show%2​0$tvdbshowname%20to%20library))" > /dev/null 2>&1
-  			test "$XBMCUpdate" = "Enabled" && curl -L -s -m3 --connect-timeout 5 "http://"$XBMCIP"/xbmcCmds/xbmcHttp?command=ExecBuiltIn(UpdateLibrary(video))" > /dev/null 2>&1
-  			test "$XBMCClean" = "Enabled" && curl -L -s -m3 --connect-timeout 5 "http://"$XBMCIP"/xbmcCmds/xbmcHttp?command=ExecBuiltIn(CleanLibrary(video))" > /dev/null 2>&1
+           test "$XBMCNotify" = "Enabled" && curl -L -s -m3 --connect-timeout 5 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"GUI.ShowNotification","params":{"title":"mythical Librarian adding","message":"'$tvdbshowname'"},"id":1}' http://$XBMCIP/jsonrpc > /dev/null 2>&1
+           test "$XBMCNotify" = "Enabled" && curl -L -s -m3 --connect-timeout 5 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"VideoLibrary.Scan","id":1}' http://$XBMCIP/jsonrpc > /dev/null 2>&1
+           test "$XBMCNotify" = "Enabled" && curl -L -s -m3 --connect-timeout 5 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"VideoLibrary.Clean","id":1}' http://$XBMCIP/jsonrpc > /dev/null 2>&1
   		done
   	fi
   return 0
@@ -1611,7 +1611,7 @@ setSeriesIDandNewShowNameBasedOnSeriesLineNumber(){
  #Create an NFO file based upon extracted information
  GenerateEpisodeNFO () {
  	test -f "$MoveDir/$ShowFileName.nfo" && rm -f "$MoveDir/$ShowFileName.nfo"
- 	echo -e "<tvshow>">>"$MoveDir/$ShowFileName.nfo"
+ 	echo -e "<episodedetails>">>"$MoveDir/$ShowFileName.nfo"
 
  	if [ "$NamingConvention" = "" ] ; then
  		if [ "$GoForDoover" = "1" ]; then
@@ -1628,7 +1628,7 @@ setSeriesIDandNewShowNameBasedOnSeriesLineNumber(){
  	echo -e "\t<genre>$ShowCategory</genre>">>"$MoveDir/$ShowFileName.nfo" 
 	test "$HasSxxExx" = "1" && echo -e "\t<season>$Sxx</season>" >>"$MoveDir/$ShowFileName.nfo" || echo -e "\t<season>0</season>">>"$MoveDir/$ShowFileName.nfo" 
  	test "$HasSxxExx" = "1" && echo -e "\t<episode>$Exx</episode>">>"$MoveDir/$ShowFileName.nfo" || echo -e "\t<episode>0</episode>">>"$MoveDir/$ShowFileName.nfo" 
- 	echo -e "</tvshow>">>"$MoveDir/$ShowFileName.nfo"
+ 	echo -e "</episodedetails>">>"$MoveDir/$ShowFileName.nfo"
  	echo "'$MoveDir/$ShowFileName.nfo'" "'$MoveDir/$ShowFileName.$OriginalExt'">>"$mythicalLibrarian"/created.tracking
  return 0
  }
@@ -1916,10 +1916,10 @@ Do not run this command with sudo."
   	for XBMCIP in ${XBMCIPs[@]}
  	do
  		echo "SENDING REQUESTED COMMANDS TO:$XBMCIP"
-		XBMCcomm=`curl -L -s --connect-timeout 3 "http://"$XBMCIP"/xbmcCmds/xbmcHttp?command=ExecBuiltIn(Notification(mythical%20Librarian%20Test%2CTesting%20Communication%20with%20mythicallibrarian))"|tr -d "</html>i^" `
+		XBMCcomm=`curl -L -s -m3 --connect-timeout 5 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"GUI.ShowNotification","params":{"title":"mythical Librarian Test","message":"'$PythonBindingsCheck'"},"id":1}' http://$XBMCIP/jsonrpc|tr -d "\"</html>i^" `
 		test "$XBMCcomm" != "" && echo "TESTING:$XBMCcomm" || echo "COMMUNICATIONS NOT ESTABLISHED: $XBMCIP"
  	done
- 	test "`echo $XBMCcomm`" = "OK" && XBMCcomm="***PASSED***" || XBMCcomm="***FAILED***"
+ 	test "`echo $XBMCcomm`" = "{d:1,jsonrpc:2.0,resu:OK}" && XBMCcomm="***PASSED***" || XBMCcomm="***FAILED***"
  	echo "XBMC Communications $XBMCcomm"
  	read -n1 -p "Press any key to test file system permissions..."
  	echo ""
